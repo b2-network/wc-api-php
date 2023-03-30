@@ -10,12 +10,6 @@
 namespace Automattic\WooCommerce\HttpClient;
 
 use Automattic\WooCommerce\Client;
-use Automattic\WooCommerce\HttpClient\BasicAuth;
-use Automattic\WooCommerce\HttpClient\HttpClientException;
-use Automattic\WooCommerce\HttpClient\OAuth;
-use Automattic\WooCommerce\HttpClient\Options;
-use Automattic\WooCommerce\HttpClient\Request;
-use Automattic\WooCommerce\HttpClient\Response;
 
 /**
  * REST API HTTP Client class.
@@ -90,10 +84,10 @@ class HttpClient
     /**
      * Initialize HTTP client.
      *
-     * @param string $url            Store URL.
-     * @param string $consumerKey    Consumer key.
+     * @param string $url Store URL.
+     * @param string $consumerKey Consumer key.
      * @param string $consumerSecret Consumer Secret.
-     * @param array  $options        Client options.
+     * @param array $options Client options.
      */
     public function __construct($url, $consumerKey, $consumerSecret, $options)
     {
@@ -101,9 +95,9 @@ class HttpClient
             throw new HttpClientException('cURL is NOT installed on this server', -1, new Request(), new Response());
         }
 
-        $this->options        = new Options($options);
-        $this->url            = $this->buildApiUrl($url);
-        $this->consumerKey    = $consumerKey;
+        $this->options = new Options($options);
+        $this->url = $this->buildApiUrl($url);
+        $this->consumerKey = $consumerKey;
         $this->consumerSecret = $consumerSecret;
     }
 
@@ -134,8 +128,8 @@ class HttpClient
     /**
      * Build URL.
      *
-     * @param string $url        URL.
-     * @param array  $parameters Query string parameters.
+     * @param string $url URL.
+     * @param array $parameters Query string parameters.
      *
      * @return string
      */
@@ -155,9 +149,9 @@ class HttpClient
     /**
      * Authenticate.
      *
-     * @param string $url        Request URL.
-     * @param string $method     Request method.
-     * @param array  $parameters Request parameters.
+     * @param string $url Request URL.
+     * @param string $method Request method.
+     * @param array $parameters Request parameters.
      *
      * @return array
      */
@@ -206,14 +200,14 @@ class HttpClient
     /**
      * Get request headers.
      *
-     * @param  bool $sendData If request send data or not.
+     * @param bool $sendData If request send data or not.
      *
      * @return array
      */
     protected function getRequestHeaders($sendData = false)
     {
         $headers = [
-            'Accept'     => 'application/json',
+            'Accept' => 'application/json',
             'User-Agent' => $this->options->userAgent() . '/' . Client::VERSION,
         ];
 
@@ -221,23 +215,31 @@ class HttpClient
             $headers['Content-Type'] = 'application/json;charset=utf-8';
         }
 
+        foreach ($this->customCurlOptions as $customCurlOptionKey => $customCurlOptionValue) {
+            if ($customCurlOptionKey == CURLOPT_HTTPHEADER) {
+                foreach ($customCurlOptionValue as $option) {
+                    list($key, $value) = \explode(': ', $option);
+                    $headers[trim($key)] = $value;
+                }
+            }
+        }
         return $headers;
     }
 
     /**
      * Create request.
      *
-     * @param string $endpoint   Request endpoint.
-     * @param string $method     Request method.
-     * @param array  $data       Request data.
-     * @param array  $parameters Request parameters.
+     * @param string $endpoint Request endpoint.
+     * @param string $method Request method.
+     * @param array $data Request data.
+     * @param array $parameters Request parameters.
      *
      * @return Request
      */
     protected function createRequest($endpoint, $method, $data = [], $parameters = [])
     {
-        $body    = '';
-        $url     = $this->url . $endpoint;
+        $body = '';
+        $url = $this->url . $endpoint;
         $hasData = !empty($data);
         $headers = $this->getRequestHeaders($hasData);
 
@@ -289,8 +291,8 @@ class HttpClient
     protected function getResponseHeaders()
     {
         $headers = [];
-        $lines   = \explode("\n", $this->responseHeaders);
-        $lines   = \array_filter($lines, 'trim');
+        $lines = \explode("\n", $this->responseHeaders);
+        $lines = \array_filter($lines, 'trim');
 
         foreach ($lines as $index => $line) {
             // Remove HTTP/xxx params.
@@ -322,8 +324,8 @@ class HttpClient
         });
 
         // Get response data.
-        $body    = \curl_exec($this->ch);
-        $code    = \curl_getinfo($this->ch, CURLINFO_HTTP_CODE);
+        $body = \curl_exec($this->ch);
+        $code = \curl_getinfo($this->ch, CURLINFO_HTTP_CODE);
         $headers = $this->getResponseHeaders();
 
         // Register response.
@@ -337,8 +339,8 @@ class HttpClient
      */
     protected function setDefaultCurlSettings()
     {
-        $verifySsl       = $this->options->verifySsl();
-        $timeout         = $this->options->getTimeout();
+        $verifySsl = $this->options->verifySsl();
+        $timeout = $this->options->getTimeout();
         $followRedirects = $this->options->getFollowRedirects();
 
         \curl_setopt($this->ch, CURLOPT_SSL_VERIFYPEER, $verifySsl);
@@ -348,15 +350,16 @@ class HttpClient
         if ($followRedirects) {
             \curl_setopt($this->ch, CURLOPT_FOLLOWLOCATION, true);
         }
-        \curl_setopt($this->ch, CURLOPT_CONNECTTIMEOUT, $timeout);
-        \curl_setopt($this->ch, CURLOPT_TIMEOUT, $timeout);
-        \curl_setopt($this->ch, CURLOPT_RETURNTRANSFER, true);
-        \curl_setopt($this->ch, CURLOPT_HTTPHEADER, $this->request->getRawHeaders());
         \curl_setopt($this->ch, CURLOPT_URL, $this->request->getUrl());
 
         foreach ($this->customCurlOptions as $customCurlOptionKey => $customCurlOptionValue) {
-            \curl_setopt($this->ch, $customCurlOptionKey, $customCurlOptionValue);
+            if ($customCurlOptionKey != CURLOPT_HTTPHEADER)
+                \curl_setopt($this->ch, $customCurlOptionKey, $customCurlOptionValue);
         }
+        \curl_setopt($this->ch, CURLOPT_HTTPHEADER, $this->request->getRawHeaders());
+        \curl_setopt($this->ch, CURLOPT_CONNECTTIMEOUT, $timeout);
+        \curl_setopt($this->ch, CURLOPT_TIMEOUT, $timeout);
+        \curl_setopt($this->ch, CURLOPT_RETURNTRANSFER, true);
     }
 
     /**
@@ -374,10 +377,10 @@ class HttpClient
 
             if (is_array($errors)) {
                 $errorMessage = $errors[0]->message;
-                $errorCode    = $errors[0]->code;
+                $errorCode = $errors[0]->code;
             } elseif (isset($errors->message, $errors->code)) {
                 $errorMessage = $errors->message;
-                $errorCode    = $errors->code;
+                $errorCode = $errors->code;
             }
 
             throw new HttpClientException(
@@ -424,10 +427,10 @@ class HttpClient
     /**
      * Make requests.
      *
-     * @param string $endpoint   Request endpoint.
-     * @param string $method     Request method.
-     * @param array  $data       Request data.
-     * @param array  $parameters Request parameters.
+     * @param string $endpoint Request endpoint.
+     * @param string $method Request method.
+     * @param array $data Request data.
+     * @param array $parameters Request parameters.
      *
      * @return \stdClass
      */
