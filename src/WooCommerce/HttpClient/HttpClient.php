@@ -355,7 +355,7 @@ class HttpClient
         foreach ($this->customCurlOptions as $customCurlOptionKey => $customCurlOptionValue) {
             if ($customCurlOptionKey == CURLOPT_HTTPHEADER) {
                 list($key, $value) = \explode(': ', $customCurlOptionValue);
-                $this->request->appendHeader($key, $value);
+                $this->request->addHeader($key, $value);
             } else {
                 \curl_setopt($this->ch, $customCurlOptionKey, $customCurlOptionValue);
             }
