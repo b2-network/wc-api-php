@@ -352,11 +352,15 @@ class HttpClient
         \curl_setopt($this->ch, CURLOPT_TIMEOUT, $timeout);
         \curl_setopt($this->ch, CURLOPT_RETURNTRANSFER, true);
         \curl_setopt($this->ch, CURLOPT_HTTPHEADER, $this->request->getRawHeaders());
-        \curl_setopt($this->ch, CURLOPT_URL, $this->request->getUrl());
-
         foreach ($this->customCurlOptions as $customCurlOptionKey => $customCurlOptionValue) {
-            \curl_setopt($this->ch, $customCurlOptionKey, $customCurlOptionValue);
+            if ($customCurlOptionKey == CURLOPT_HTTPHEADER) {
+                list($key, $value) = \explode(': ', $customCurlOptionValue);
+                $this->request->appendHeader($key, $value);
+            } else {
+                \curl_setopt($this->ch, $customCurlOptionKey, $customCurlOptionValue);
+            }
         }
+        \curl_setopt($this->ch, CURLOPT_HTTPHEADER, $this->request->getRawHeaders());
     }
 
     /**
