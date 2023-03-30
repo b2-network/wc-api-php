@@ -160,6 +160,17 @@ class Request
     }
 
     /**
+     * Add headers.
+     *
+     * @return array
+     */
+    public function addHeader($key, $value)
+    {
+        $this->headers[trim($key)] = trim($value);
+        return $this->headers;
+    }
+
+    /**
      * Get raw headers.
      *
      * @return array
