@@ -487,4 +487,14 @@ class HttpClient
     {
         $this->customCurlOptions = $curlOptions;
     }
+
+    /**
+     * return Curl resource for direct curl manipulation
+     *
+     * @return ctx inner curl resource
+     */
+    public function getCUrl()
+    {
+        return $this->ch;
+    }
 }
